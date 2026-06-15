@@ -14,6 +14,9 @@ import orderRoutes from "./routes/orderRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 
 
+
+
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +27,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -41,6 +46,7 @@ app.use('/api/upload', uploadRouter);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 5000;
 

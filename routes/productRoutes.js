@@ -1,6 +1,7 @@
 import express from "express";
-
+import upload from "../middleware/upload.js";
 const router = express.Router();
+
 
 import {
   getProducts,
@@ -16,11 +17,31 @@ router.get("/getallproducts", getProducts);
 // Get Single Product
 router.get("/getsingleproduct/:id", getProductById);
 
-// Add Product
-router.post("/addproduct", addProduct);
+
+router.post(
+  "/addproduct",
+  upload.array("images", 5),
+  (req, res) => {
+
+    console.log("==============");
+    console.log("BODY =>", req.body);
+    console.log("FILES =>", req.files);
+    console.log("==============");
+
+    res.json({
+      success: true,
+      body: req.body,
+      files: req.files
+    });
+  }
+);
 
 // Update Product
-router.put("/updateproduct/:id", updateProduct);
+router.put(
+  "/updateproduct/:id",
+  upload.array("images", 5),
+  updateProduct
+);
 
 // Delete Product
 router.delete("/deleteproduct/:id", deleteProduct);
