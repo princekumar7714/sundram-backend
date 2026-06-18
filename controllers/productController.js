@@ -34,6 +34,7 @@ message: error.message,
 };
 
 // Add Product
+console.log("ADD PRODUCT API HIT");
 const addProduct = async (req, res) => {
   try {
 
@@ -57,23 +58,32 @@ const addProduct = async (req, res) => {
       discount,
     } = req.body;
 
-    // rest code
-    const images = req.files?.map(
-      file => `/uploads/${file.filename}`
-    ) || [];
+   
 
-    const newProduct = new Product({
-      name,
-      price,
-      category,
-      description,
-      stock,
-      rating,
-      featured,
-      discount,
-      images,
-      image: images[0]
-    });
+console.log("PRODUCT SAVED => ", savedProduct);
+
+res.status(201).json(savedProduct);
+
+    const images =
+  req.files?.map(
+    (file) =>
+      `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
+  ) || [];
+
+const newProduct = new Product({
+  name,
+  price,
+  category,
+  description,
+  stock,
+  rating,
+  featured,
+  discount,
+
+  image: images[0] || "",
+
+  images,
+});
 
     const savedProduct = await newProduct.save();
 

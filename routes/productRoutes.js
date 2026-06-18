@@ -21,19 +21,7 @@ router.get("/getsingleproduct/:id", getProductById);
 router.post(
   "/addproduct",
   upload.array("images", 5),
-  (req, res) => {
-
-    console.log("==============");
-    console.log("BODY =>", req.body);
-    console.log("FILES =>", req.files);
-    console.log("==============");
-
-    res.json({
-      success: true,
-      body: req.body,
-      files: req.files
-    });
-  }
+  addProduct
 );
 
 // Update Product
