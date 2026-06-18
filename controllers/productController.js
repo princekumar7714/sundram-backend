@@ -34,18 +34,10 @@ message: error.message,
 };
 
 // Add Product
-console.log("ADD PRODUCT API HIT");
 const addProduct = async (req, res) => {
   try {
-
-    console.log("BODY => ", req.body);
-    console.log("FILES => ", req.files);
-
-    if (!req.body) {
-      return res.status(400).json({
-        message: "req.body is undefined"
-      });
-    }
+    console.log("BODY =>", req.body);
+    console.log("FILES =>", req.files);
 
     const {
       name,
@@ -58,42 +50,36 @@ const addProduct = async (req, res) => {
       discount,
     } = req.body;
 
-   
-
-console.log("PRODUCT SAVED => ", savedProduct);
-
-res.status(201).json(savedProduct);
-
     const images =
-  req.files?.map(
-    (file) =>
-      `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
-  ) || [];
+      req.files?.map(
+        (file) =>
+          `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
+      ) || [];
 
-const newProduct = new Product({
-  name,
-  price,
-  category,
-  description,
-  stock,
-  rating,
-  featured,
-  discount,
-
-  image: images[0] || "",
-
-  images,
-});
+    const newProduct = new Product({
+      name,
+      price,
+      category,
+      description,
+      stock,
+      rating,
+      featured,
+      discount,
+      image: images[0] || "",
+      images,
+    });
 
     const savedProduct = await newProduct.save();
+
+    console.log("PRODUCT SAVED =>", savedProduct);
 
     res.status(201).json(savedProduct);
 
   } catch (error) {
-    console.log(error);
+    console.log("ADD PRODUCT ERROR =>", error);
 
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   }
 };
