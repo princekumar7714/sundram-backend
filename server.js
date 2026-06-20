@@ -38,8 +38,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
     await sequelize.sync();
     console.log('MySQL tables are ready');
   } catch (err) {
-    console.error('MySQL connection error:', err);
-    process.exit(1);
+    // On Render (and other platforms), MySQL may not be reachable at boot
+    // (missing env vars / DB not provisioned). Don't crash the app.
+    console.error('MySQL connection error (continuing without DB sync):', err?.message || err);
   }
 })();
 
