@@ -1,14 +1,13 @@
-// One-time script to create (or fix) the admin user directly in MongoDB.
+// One-time script to create (or fix) the admin user in MySQL.
 //
-// HOW TO RUN (inside the backend folder, on your own computer):
+// HOW TO RUN (inside the backend folder on your own computer):
 //   node seedAdmin.js
-//
-// Make sure your .env file (with MONGO_URI) is present in this same folder
-// before running.
 
-import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
-import User from "./models/User.js";
+
+import sequelize from "./config/sequelize.js";
+import User from "./models/sql/User.js";
 
 dotenv.config();
 
@@ -17,38 +16,40 @@ const ADMIN_PASSWORD = "Admin@123";
 const ADMIN_NAME = "Admin";
 
 const run = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log("Connected to MongoDB");
+  try {
+    await sequelize.authenticate();
+    console.log("Connected to MySQL");
 
-        let user = await User.findOne({ email: ADMIN_EMAIL });
+    const existing = await User.findOne({ where: { email: ADMIN_EMAIL } });
+    const hashed = await bcrypt.hash(ADMIN_PASSWORD, 10);
 
-        if (user) {
-            user.password = ADMIN_PASSWORD; // pre-save hook will hash it
-            user.isAdmin = true;
-            await user.save();
-            console.log(`Updated existing user "${ADMIN_EMAIL}" -> isAdmin: true, password reset.`);
-        } else {
-            user = await User.create({
-                name: ADMIN_NAME,
-                email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD,
-                isAdmin: true,
-            });
-            console.log(`Created new admin user "${ADMIN_EMAIL}".`);
-        }
-
-        console.log("\n--- Admin Login Details ---");
-        console.log(`Email:    ${ADMIN_EMAIL}`);
-        console.log(`Password: ${ADMIN_PASSWORD}`);
-        console.log("Login at: /admin/login");
-        console.log("----------------------------\n");
-
-        process.exit(0);
-    } catch (error) {
-        console.error("Seed failed:", error.message);
-        process.exit(1);
+    if (existing) {
+      existing.password = hashed;
+      existing.isAdmin = true;
+      await existing.save();
+      console.log(`Updated existing admin "${ADMIN_EMAIL}" (password reset).`);
+    } else {
+      await User.create({
+        name: ADMIN_NAME,
+        email: ADMIN_EMAIL,
+        password: hashed,
+        isAdmin: true,
+      });
+      console.log(`Created new admin user "${ADMIN_EMAIL}".`);
     }
+
+    console.log("\n--- Admin Login Details ---");
+    console.log(`Email:    ${ADMIN_EMAIL}`);
+    console.log(`Password: ${ADMIN_PASSWORD}`);
+    console.log("Login at: /api/auth/login");
+    console.log("----------------------------\n");
+
+    process.exit(0);
+  } catch (error) {
+    console.error("Seed failed:", error.message);
+    process.exit(1);
+  }
 };
 
 run();
+

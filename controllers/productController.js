@@ -1,43 +1,32 @@
-import Product from "../models/product.js";
+import Product from "../models/sql/Product.js";
 
 // Get All Products
 const getProducts = async (req, res) => {
-try {
-const products = await Product.find();
-res.json(products);
-} catch (error) {
-res.status(500).json({
-message: error.message,
-});
-}
+  try {
+    const products = await Product.findAll({ order: [["createdAt", "DESC"]] });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // Get Single Product
 const getProductById = async (req, res) => {
-try {
-const product = await Product.findById(req.params.id);
-
-if (product) {
-  res.json(product);
-} else {
-  res.status(404).json({
-    message: "Product not found",
-  });
-}
-
-
-} catch (error) {
-res.status(500).json({
-message: error.message,
-});
-}
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // Add Product
 const addProduct = async (req, res) => {
   try {
-    console.log("BODY =>", req.body);
-    console.log("FILES =>", req.files);
+    // upload middleware should put files in req.files
+    // req.files is optional depending on frontend usage.
+    const images = (req.files || []).map((f) => f.path);
 
     const {
       name,
@@ -50,13 +39,36 @@ const addProduct = async (req, res) => {
       discount,
     } = req.body;
 
-    const images =
-      req.files?.map(
-        (file) =>
-          `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
-      ) || [];
+    const image = images[0] || req.body.image || "";
 
-    const newProduct = new Product({
+    const product = await Product.create({
+      name,
+      price,
+      image,
+      images: images.length ? images : null,
+      category,
+      description,
+      stock,
+      rating,
+      featured,
+      discount,
+    });
+
+    res.status(201).json(product);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update Product
+const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    const images = (req.files || []).map((f) => f.path);
+
+    const {
       name,
       price,
       category,
@@ -65,91 +77,47 @@ const addProduct = async (req, res) => {
       rating,
       featured,
       discount,
-      image: images[0] || "",
-      images,
-    });
+    } = req.body;
 
-    const savedProduct = await newProduct.save();
+    if (name !== undefined) product.name = name;
+    if (price !== undefined) product.price = price;
+    if (category !== undefined) product.category = category;
+    if (description !== undefined) product.description = description;
+    if (stock !== undefined) product.stock = stock;
+    if (rating !== undefined) product.rating = rating;
+    if (featured !== undefined) product.featured = featured;
+    if (discount !== undefined) product.discount = discount;
 
-    console.log("PRODUCT SAVED =>", savedProduct);
+    if (images.length) {
+      product.images = images;
+      product.image = images[0];
+    }
 
-    res.status(201).json(savedProduct);
-
+    await product.save();
+    res.json(product);
   } catch (error) {
-    console.log("ADD PRODUCT ERROR =>", error);
-
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
-};
-// Update Product
-const updateProduct = async (req, res) => {
-try {
-const { id } = req.params;
-
-
-const product = await Product.findById(id);
-
-if (!product) {
-  return res.status(404).json({
-    message: "Product not found",
-  });
-}
-
-let images = product.images;
-
-if (req.files && req.files.length > 0) {
-  images = req.files.map(
-    (file) =>
-      `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
-  );
-}
-
-const updatedProduct =
-  await Product.findByIdAndUpdate(
-    id,
-    {
-      ...req.body,
-      images,
-    },
-    { new: true }
-  );
-
-res.json(updatedProduct);
-  
-
-} catch (error) {
-res.status(500).json({
-message: error.message,
-});
-}
 };
 
 // Delete Product
 const deleteProduct = async (req, res) => {
-try {
-const { id } = req.params;
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
-
-await Product.findByIdAndDelete(id);
-
-res.json({
-  message: "Product deleted successfully",
-});
-
-
-} catch (error) {
-res.status(500).json({
-message: error.message,
-});
-}
+    await product.destroy();
+    res.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export {
-getProducts,
-getProductById,
-addProduct,
-updateProduct,
-deleteProduct,
+  getProducts,
+  getProductById,
+  addProduct,
+  updateProduct,
+  deleteProduct,
 };
+
