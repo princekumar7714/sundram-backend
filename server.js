@@ -34,7 +34,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
     console.log('MySQL connected');
 
     // Auto-create tables based on Sequelize models.
-    // For strict SQL migrations, remove this and use explicit migration/DDL.
     await sequelize.sync();
     console.log('MySQL tables are ready');
   } catch (err) {
@@ -43,6 +42,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
     console.error('MySQL connection error (continuing without DB sync):', err?.message || err);
   }
 })();
+
 
 app.get('/', (req, res) => {
   res.send('Sundram Agri API Running');
