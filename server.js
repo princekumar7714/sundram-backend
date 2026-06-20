@@ -39,7 +39,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
   } catch (err) {
     // On Render (and other platforms), MySQL may not be reachable at boot
     // (missing env vars / DB not provisioned). Don't crash the app.
+    const env = {
+      DB_HOST: process.env.DB_HOST,
+      DB_NAME: process.env.DB_NAME,
+      DB_USER: process.env.DB_USER,
+      DB_PORT: process.env.DB_PORT,
+    };
     console.error('MySQL connection error (continuing without DB sync):', err?.message || err);
+    console.error('DB env snapshot:', env);
   }
 })();
 
