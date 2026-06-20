@@ -11,21 +11,33 @@ const {
   DB_PASS = '',
 } = process.env;
 
+let sequelize;
+
 if (!DB_HOST || !DB_NAME || !DB_USER) {
-  // Don't silently try localhost in production.
-  // This prevents confusing ECONNREFUSED errors on Render.
-  throw new Error(
-    `Missing required DB env vars. Need DB_HOST, DB_NAME, DB_USER. Got: DB_HOST=${DB_HOST}, DB_NAME=${DB_NAME}, DB_USER=${DB_USER}`
+  // On Render, missing DB env vars will happen sometimes during boot.
+  // We allow the app to start; DB sync/auth endpoints may fail until env is correct.
+  console.error(
+    'Missing required DB env vars (MySQL disabled). Need DB_HOST, DB_NAME, DB_USER.',
+    { DB_HOST, DB_NAME, DB_USER, DB_PORT: DB_PORT }
   );
+
+  sequelize = new Sequelize('', '', '', {
+    host: DB_HOST || '127.0.0.1',
+    port: Number(DB_PORT),
+    dialect: 'mysql',
+    logging: false,
+    define: { freezeTableName: true },
+  });
+} else {
+  sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
+    host: DB_HOST,
+    port: Number(DB_PORT),
+    dialect: 'mysql',
+    logging: false,
+  });
 }
 
-
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
-  host: DB_HOST,
-  port: Number(DB_PORT),
-  dialect: 'mysql',
-  logging: false,
-});
-
 export default sequelize;
+
+
 
