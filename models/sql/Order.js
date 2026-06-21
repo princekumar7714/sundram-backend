@@ -21,7 +21,14 @@ const Order = sequelize.define(
       defaultValue: 'COD',
     },
 
-    totalPrice: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    totalPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      get() {
+        const val = this.getDataValue('totalPrice');
+        return val === null ? null : parseFloat(val);
+      },
+    },
 
     isPaid: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     paidAt: { type: DataTypes.DATE, allowNull: true },
@@ -40,4 +47,3 @@ const Order = sequelize.define(
 );
 
 export default Order;
-
