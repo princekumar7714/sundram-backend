@@ -1,5 +1,14 @@
 import Product from "../models/sql/Product.js";
 
+const normalizeUploadPaths = (files = []) => {
+  return files.map((f) => {
+    // multer f.path is filesystem path; normalize to public URL path
+    // frontend expects: /uploads/<filename>
+    const filename = String(f?.path || "").split(/\\|\//).pop();
+    return filename ? `/uploads/${filename}` : "";
+  }).filter(Boolean);
+};
+
 // Get All Products
 const getProducts = async (req, res) => {
   try {
@@ -24,9 +33,7 @@ const getProductById = async (req, res) => {
 // Add Product
 const addProduct = async (req, res) => {
   try {
-    // upload middleware should put files in req.files
-    // req.files is optional depending on frontend usage.
-    const images = (req.files || []).map((f) => f.path);
+    const images = normalizeUploadPaths(req.files || []);
 
     const {
       name,
@@ -66,7 +73,7 @@ const updateProduct = async (req, res) => {
     const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const images = (req.files || []).map((f) => f.path);
+    const images = normalizeUploadPaths(req.files || []);
 
     const {
       name,
@@ -88,6 +95,7 @@ const updateProduct = async (req, res) => {
     if (featured !== undefined) product.featured = featured;
     if (discount !== undefined) product.discount = discount;
 
+    // If admin uploaded new images in this request, replace stored images
     if (images.length) {
       product.images = images;
       product.image = images[0];
