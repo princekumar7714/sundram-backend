@@ -21,13 +21,21 @@ if (!DB_HOST || !DB_NAME || !DB_USER) {
     { DB_HOST, DB_NAME, DB_USER, DB_PORT: DB_PORT }
   );
 
-  sequelize = new Sequelize('', '', '', {
-    host: DB_HOST || '127.0.0.1',
+  // Create a Sequelize instance only if DB_HOST exists; otherwise use a safe default.
+  // This prevents hard failure when env is partially missing.
+  const safeHost = DB_HOST ? DB_HOST.trim() : '127.0.0.1';
+  const safeDbName = DB_NAME ? String(DB_NAME).trim() : '';
+  const safeUser = DB_USER ? String(DB_USER).trim() : '';
+
+  sequelize = new Sequelize(safeDbName, safeUser, DB_PASS || '', {
+    host: safeHost,
+
     port: Number(DB_PORT),
     dialect: 'mysql',
     logging: false,
     define: { freezeTableName: true },
   });
+
 } else {
   sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
     host: DB_HOST,
