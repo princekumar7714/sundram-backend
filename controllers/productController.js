@@ -1,4 +1,6 @@
 import Product from "../models/sql/Product.js";
+const { Op } = Product.sequelize;
+
 
 const normalizeUploadPaths = (files = []) => {
   return files.map((f) => {
@@ -18,6 +20,70 @@ const getProducts = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Search/Filter Products (Flipkart-like)
+const searchProducts = async (req, res) => {
+  try {
+    const {
+      search = "",
+      category = "all",
+      minPrice = "0",
+      maxPrice = "100000000",
+      sort = "createdAt_desc",
+      page = "1",
+      limit = "30",
+    } = req.query;
+
+    const min = Number(minPrice);
+    const max = Number(maxPrice);
+    const pageNum = Math.max(1, Number(page));
+    const pageLimit = Math.min(100, Math.max(1, Number(limit)));
+
+    const where = {};
+
+    if (category && category !== "all") {
+      where.category = category;
+    }
+
+    if (!Number.isNaN(min) && !Number.isNaN(max)) {
+      where.price = {
+        ...(Number.isFinite(min) ? { [Op.gte]: min } : {}),
+        ...(Number.isFinite(max) ? { [Op.lte]: max } : {}),
+      };
+    }
+
+    if (search && String(search).trim()) {
+      const s = String(search).trim();
+      where[Op.or] = [
+        { name: { [Op.like]: `%${s}%` } },
+        { description: { [Op.like]: `%${s}%` } },
+      ];
+    }
+
+    let order = [["createdAt", "DESC"]];
+    if (sort === "price_asc") order = [["price", "ASC"]];
+    if (sort === "price_desc") order = [["price", "DESC"]];
+
+    const offset = (pageNum - 1) * pageLimit;
+
+    const { rows, count } = await Product.findAndCountAll({
+      where,
+      order,
+      offset,
+      limit: pageLimit,
+    });
+
+    res.json({
+      items: rows,
+      total: count,
+      page: pageNum,
+      limit: pageLimit,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // Get Single Product
 const getProductById = async (req, res) => {
@@ -127,5 +193,6 @@ export {
   addProduct,
   updateProduct,
   deleteProduct,
+  searchProducts,
 };
 

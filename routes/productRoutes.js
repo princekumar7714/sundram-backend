@@ -9,10 +9,15 @@ import {
   addProduct,
   updateProduct,
   deleteProduct,
+  searchProducts,
 } from "../controllers/productController.js";
 
 // Get All Products
 router.get("/getallproducts", getProducts);
+
+// Search/Filter Products
+router.get("/search", searchProducts);
+
 
 // Get Single Product
 router.get("/getsingleproduct/:id", getProductById);
@@ -36,3 +41,4 @@ router.delete("/deleteproduct/:id", deleteProduct);
 
 
 export default router;
+
