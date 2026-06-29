@@ -12,8 +12,10 @@ import uploadRouter from './routes/uploadRoutes.js';
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
 
 dotenv.config();
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,9 +64,11 @@ app.use('/api/upload', uploadRouter);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 5000;
+
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

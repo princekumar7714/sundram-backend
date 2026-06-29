@@ -49,8 +49,26 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- WISHLIST
+CREATE TABLE IF NOT EXISTS wishlist (
+  userId BIGINT UNSIGNED NOT NULL,
+  productId BIGINT UNSIGNED NOT NULL,
+  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (userId, productId),
+  CONSTRAINT fk_wishlist_user
+    FOREIGN KEY (userId) REFERENCES users (id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_wishlist_product
+    FOREIGN KEY (productId) REFERENCES products (id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  KEY idx_wishlist_productId (productId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ORDER ITEMS helper (optional). Keeping orderItems as JSON to match current structure.
 -- If you prefer normalized tables later, we can refactor.
+
 
 CREATE TABLE IF NOT EXISTS orders (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

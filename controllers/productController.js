@@ -1,5 +1,6 @@
 import Product from "../models/sql/Product.js";
-const { Op } = Product.sequelize;
+import { Op, fn, col, where as sequelizeWhere, literal } from "sequelize";
+
 
 
 const normalizeUploadPaths = (files = []) => {
@@ -21,7 +22,7 @@ const getProducts = async (req, res) => {
   }
 };
 
-// Search/Filter Products (Flipkart-like)
+// Search/Filter Products
 const searchProducts = async (req, res) => {
   try {
     const {
@@ -34,48 +35,73 @@ const searchProducts = async (req, res) => {
       limit = "30",
     } = req.query;
 
-    const min = Number(minPrice);
-    const max = Number(maxPrice);
+    const sequelize = Product.sequelize;
     const pageNum = Math.max(1, Number(page));
     const pageLimit = Math.min(100, Math.max(1, Number(limit)));
-
-    const where = {};
-
-    if (category && category !== "all") {
-      where.category = category;
-    }
-
-    if (!Number.isNaN(min) && !Number.isNaN(max)) {
-      where.price = {
-        ...(Number.isFinite(min) ? { [Op.gte]: min } : {}),
-        ...(Number.isFinite(max) ? { [Op.lte]: max } : {}),
-      };
-    }
-
-    if (search && String(search).trim()) {
-      const s = String(search).trim();
-      where[Op.or] = [
-        { name: { [Op.like]: `%${s}%` } },
-        { description: { [Op.like]: `%${s}%` } },
-      ];
-    }
-
-    let order = [["createdAt", "DESC"]];
-    if (sort === "price_asc") order = [["price", "ASC"]];
-    if (sort === "price_desc") order = [["price", "DESC"]];
-
     const offset = (pageNum - 1) * pageLimit;
 
-    const { rows, count } = await Product.findAndCountAll({
-      where,
-      order,
-      offset,
-      limit: pageLimit,
-    });
+    const min = Number(minPrice);
+    const max = Number(maxPrice);
 
-    res.json({
+    const replacements = {
+      search: `%${String(search || "").trim()}%`,
+      category: String(category || "all").trim().toLowerCase(),
+      min: Number.isFinite(min) ? min : 0,
+      max: Number.isFinite(max) ? max : 100000000,
+      limit: pageLimit,
+      offset,
+    };
+
+    const categoryAliases = {
+      seeds: ["seeds", "seed"],
+      fertilizers: ["fertilizers", "fertilizer"],
+      pesticides: ["pesticides", "pesticide"],
+      tools: ["tools", "tool"],
+    };
+
+    const normalizedCategory = String(category || "all").trim().toLowerCase();
+    const candidates = categoryAliases[normalizedCategory] || (normalizedCategory === "all" ? [] : [normalizedCategory]);
+
+    const whereParts = [];
+
+    // category
+    if (normalizedCategory && normalizedCategory !== "all" && candidates.length) {
+      whereParts.push("LOWER(category) IN (:catCandidates)");
+      replacements.catCandidates = candidates.map((c) => String(c).toLowerCase());
+    }
+
+    // price
+    whereParts.push("price >= :min");
+    whereParts.push("price <= :max");
+
+    // search
+    if (String(search || "").trim()) {
+      whereParts.push("(name LIKE :search OR description LIKE :search)");
+    }
+
+    const whereSql = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
+
+    const orderSql = (() => {
+      if (sort === "price_asc") return "price ASC";
+      if (sort === "price_desc") return "price DESC";
+      return "createdAt DESC";
+    })();
+
+    const countRows = await sequelize.query(
+      `SELECT COUNT(*) as cnt FROM products ${whereSql};`,
+      { replacements, type: sequelize.QueryTypes.SELECT }
+    );
+
+    const total = countRows?.[0]?.cnt || 0;
+
+    const rows = await sequelize.query(
+      `SELECT * FROM products ${whereSql} ORDER BY ${orderSql} LIMIT :limit OFFSET :offset;`,
+      { replacements, type: sequelize.QueryTypes.SELECT }
+    );
+
+    return res.json({
       items: rows,
-      total: count,
+      total: Number(total),
       page: pageNum,
       limit: pageLimit,
     });
